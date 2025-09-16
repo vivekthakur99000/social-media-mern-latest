@@ -13,14 +13,14 @@ import Layout from ".//pages/Layout"
 
 const App = () => {
 
-  // const {user} = useUser()
+  const {user} = useUser()
 
 
 
   return (
     <>
       <Routes>
-        <Route path='/' element={<Layout/>}>
+        <Route path='/' element={user ? <Layout/> : <Login/>}>
         <Route index element={<Feed />} />
         <Route path='messages' element={<Messages />} />
         <Route path='messages/:id' element={<ChatBox />} />
