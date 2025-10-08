@@ -3,6 +3,7 @@ import { assets, dummyPostsData } from '../assets/assets'
 import Loading from '../components/Loading'
 import StoriesBar from '../components/StoriesBar'
 import PostCard from '../components/PostCard'
+import RecentMesaages from '../components/RecentMesaages'
 
 const Feed = () => {
 
@@ -39,9 +40,9 @@ const Feed = () => {
           <img src={assets.sponsored_img} className='w-75 h-50 rounded-md' alt="" />
           <p className='text-slate-600'>Email marketing</p>
           <p className='text-slate-400'>Lorem ipsum dolor sit amet consectetur adipisicing elit. Maiores nesciunt ipsum repellendus!</p>
-          
+
         </div>
-        <h1>Recent messages</h1>
+        <RecentMesaages/>
       </div>
     </div>
   ) : <Loading />
