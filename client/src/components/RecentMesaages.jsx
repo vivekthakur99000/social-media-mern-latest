@@ -21,7 +21,7 @@ const RecentMesaages = () => {
         <div className="flex flex-col max-h-56 overflow-y-scroll no-scrollbar">
             {
                 messages.map((message, index) => (
-                    <Link key={index} className='flex items-start gap-2 py-2 hover:bg-slate-100' >
+                    <Link to={`/messages/${message.from_user_id._id}`} key={index} className='flex items-start gap-2 py-2 hover:bg-slate-100' >
                         <img src={message.from_user_id.profile_picture} alt="" className='w-8 h-8 rounded-full' />
                         <div className="w-full">
                             <div className="flex justify-between">
