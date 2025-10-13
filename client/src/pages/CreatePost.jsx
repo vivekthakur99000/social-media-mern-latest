@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { dummyUserData } from "../assets/assets";
-import { X } from "lucide-react";
+import { Image, X } from "lucide-react";
+import toast from "react-hot-toast";
 
 const CreatePost = () => {
   const [content, setContent] = useState("");
@@ -8,6 +9,8 @@ const CreatePost = () => {
   const [loading, setLoading] = useState(false);
 
   const user = dummyUserData;
+
+  const handleSubmit = async () => {};
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
@@ -63,6 +66,39 @@ const CreatePost = () => {
               ))}
             </div>
           )}
+          {/* bottom bar */}
+
+          <div className="flex items-center justify-between pt-3 border-t border-gray-300">
+            <label
+              htmlFor="images"
+              className="flex items-center gap-2 text-sm text-gray-500 hover:border-e-gray-700 transition cursor-pointer"
+            >
+              <Image className="size-6" />
+            </label>
+            <input
+              type="file"
+              id="images"
+              accept="image/*"
+              hidden
+              multiple
+              onChange={(e) => setImages([...images, ...e.target.files])}
+            />
+            <button
+              disabled={loading}
+              onClick={() => toast.promise(
+                handleSubmit(), 
+                {
+                  loading : "Uploading...",
+                  success : <p>Post added</p>,
+                  error : <p>Post not added</p>
+                }
+              )}
+              className="text-sm bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600
+             hover:to-purple-700 active:scale-95 transition text-white font-medium px-8 py-2 rounded-md cursor-pointer"
+            >
+              Publish Post
+            </button>
+          </div>
         </div>
       </div>
     </div>
