@@ -1,0 +1,47 @@
+# Node.js specific
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+*.tgz
+
+# Build artifacts
+build/
+dist/
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# Environment variables
+.env
+.env.*.local
+
+# IDE and Editor specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store # macOS specific
+Thumbs.db # Windows specific
+
+# Log files
+*.log
+
+# MongoDB specific
+*.db
+db/
+
+# Testing artifacts
+coverage/
+
+# Uploaded files (if applicable)
+uploads/
+
+# Client-side specific (if in a separate client directory)
+client/build/
+client/node_modules/
+
+# Server-side specific (if in a separate server directory)
+server/node_modules/
