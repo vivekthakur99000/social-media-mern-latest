@@ -1,58 +1,137 @@
 // get user data using userId
 
-import User from "../models/User"
+import fs from "fs";
+import User from "../models/User";
+import imagekit from "../configs/imageKit";
+import path, { format } from "path";
+import { response } from "express";
 
 export const getUserData = async (req, res) => {
-    try {
+  try {
+    const { userId } = req.auth();
 
-        const {userId} = req.auth()
+    const user = await User.findById(userId);
 
-        const user = await User.findById(userId)
-
-        if (!user) {
-            return res.json({success : false, message : "User not found"})
-        }
-
-        res.json({success : true, user})
-        
-    } catch (error) {
-        console.log(error);
-        res.json({success : false, message : error.message})
-        
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
     }
-}
+
+    res.json({ success: true, user });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
 
 // udate user data
 
 export const updateUserData = async (req, res) => {
-    try {
+  try {
+    const { userId } = req.auth();
+    const { username, bio, location, full_name } = req.body;
 
-        const {userId} = req.auth()
-        const {username, bio, location, full_name} = req.body
+    const tempUser = await User.findById(userId);
 
-        const tempUser = await User.findById(userId)
+    !username && (username = tempUser.username);
 
-        !username  && (username = tempUser.username)
-
-        if (tempUser.username !== username) {
-            const user = await User.findOne({username})
-            if (user) {
-                // we will not change the username if it is already taken 
-                username = tempUser.username
-            }
-        }
-
-        const updatedData = {
-            username,
-            bio,
-            location,
-            full_name
-        }
-        
-        
-    } catch (error) {
-        console.log(error);
-        res.json({success : false, message : error.message})
-        
+    if (tempUser.username !== username) {
+      const user = await User.findOne({ username });
+      if (user) {
+        // we will not change the username if it is already taken
+        username = tempUser.username;
+      }
     }
-}
+
+    const updatedData = {
+      username,
+      bio,
+      location,
+      full_name,
+    };
+
+    const profile = req.files.profile && req.files.profile[0];
+    const cover = req.files.cover && req.files.cover[0];
+
+    if (profile) {
+      const buffer = fs.readFileSync(profile.path);
+      const response = await imagekit.upload({
+        file: buffer,
+        fileName: profile.originalname,
+      });
+
+      const url = imagekit.url({
+        path: response.filePath,
+        transformation: [
+          { quality: "auto" },
+          { format: "webp" },
+          { width: "512" },
+        ],
+      });
+
+      updatedData.profile_picture = url;
+    }
+
+    if (cover) {
+      const buffer = fs.readFileSync(cover.path);
+      const response = await imagekit.upload({
+        file: buffer,
+        fileName: profile.originalname,
+      });
+
+      const url = imagekit.url({
+        path: response.filePath,
+        transformation: [
+          { quality: "auto" },
+          { format: "webp" },
+          { width: "1280" },
+        ],
+      });
+
+      updatedData.cover_photo = url;
+    }
+
+    const user = await User.findByIdAndUpdate(userId, updatedData, {
+      new: true,
+    });
+
+    res.json({
+      success: true,
+      user,
+      message: "profile updated successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+
+// find user using username email, location, name
+
+export const discoverUser = async (req, res) => {
+  try {
+    const { userId } = req.auth();
+
+    const {input} = req.body;
+
+    const allUsers = await User.find({
+        $or : [
+            {username  : new RegExp(input, 'i')},
+            {email  : new RegExp(input, 'i')},
+            {full_name  : new RegExp(input, 'i')},
+            {location  : new RegExp(input, 'i')},
+        ]
+    })
+
+    const filterUsers = allUsers.filter(user => user._id !== userId)
+
+    res.json({success : true, users : filterUsers})
+
+    
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+
