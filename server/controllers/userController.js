@@ -1,10 +1,9 @@
 // get user data using userId
 
 import fs from "fs";
-import User from "../models/User";
-import imagekit from "../configs/imageKit";
-import path, { format } from "path";
-import { response } from "express";
+import User from "../models/User.js";
+import imagekit from "../configs/imageKit.js";
+
 
 export const getUserData = async (req, res) => {
   try {
@@ -108,7 +107,7 @@ export const updateUserData = async (req, res) => {
 
 // find user using username email, location, name
 
-export const discoverUser = async (req, res) => {
+export const discoverUsers = async (req, res) => {
   try {
     const { userId } = req.auth();
 
