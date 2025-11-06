@@ -222,5 +222,21 @@ export const sendConnctionRequest = async (req, res) => {
       }
     )
 
-  } catch (error) {}
+    if (!connection) {
+      await Connection.create({
+        from_user_id : userId,
+        to_user_id : id
+      })
+
+      return res.json({success : true, message : "Connection request sent successfully"})
+    }else if (connection && connection.status === 'accepted') {
+      return res.json({success : false, message : "You are already connected with this user"})
+    }
+
+    return res.json({success : false, message : "Connection request pending"})
+
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
 };
