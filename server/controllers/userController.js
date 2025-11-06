@@ -5,6 +5,7 @@ import User from "../models/User.js";
 import imagekit from "../configs/imageKit.js";
 import { toFile } from "@imagekit/nodejs"; // added
 import Connection from "../models/Connection.js";
+import { connect } from "http2";
 
 export const getUserData = async (req, res) => {
   try {
@@ -193,7 +194,7 @@ export const unfollowUser = async (req, res) => {
 
 // send connection request
 
-export const sendConnctionRequest = async (req, res) => {
+export const sendConnectionRequest = async (req, res) => {
   try {
     const { userId } = req.auth();
     const { id } = req.body;
@@ -235,6 +236,27 @@ export const sendConnctionRequest = async (req, res) => {
 
     return res.json({success : false, message : "Connection request pending"})
 
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+
+export const getUserConnection  = async (req, res) => {
+  try {
+    const { userId } = req.auth();
+
+    const user = await User.findById(userId).populate('connections followers following')
+
+    const connections = user.connections
+    const following = user.following
+    const followers = user.followers
+
+    const pendingConnections = (await Connection.find({to_user_id : userId, status : 'pending'}).populate('fron_user_id')).map((connection) => connection.from_user_id)
+
+    res.json({success  : true, connections, followers, following, pendingConnections})
+    
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
