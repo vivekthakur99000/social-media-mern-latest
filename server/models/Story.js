@@ -4,13 +4,13 @@ const storySchema = new mongoose.Schema(
   {
     user: { type: String, ref: "User", required: true },
     content: { type: String },
-    image_urls: [{ type: String }],
-    post_type: {
+    media_url: { type: String },
+    media_type: {
       type: String,
-      enum: ["text", "image", "text_with_image"],
-      required: true,
+      enum: ["image", "text", "video"],
     },
-    likes_count: [{ type: String, ref: "User" }],
+    views_count: [{ type: String, ref: "User" }],
+    background_color: {type: String},
   },
   { timestamps: true, minimize: false }
 );
