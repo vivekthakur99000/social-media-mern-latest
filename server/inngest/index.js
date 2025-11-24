@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import Connection from "../models/Connection.js";
 import sendEmail from "../configs/nodeMailer.js";
 import Story from "../models/Story.js";
+import Message from "../models/Message.js";
 
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "pingup-app" });
@@ -111,18 +112,20 @@ PingUp Team
 </div>`;
 
       await sendEmail({
-        to : connection.to_user_id.email,
+        to: connection.to_user_id.email,
         subject,
-        body
-      })
+        body,
+      });
     });
 
-    const in24Hours = new Date(Date.now() + 24 * 60 * 60 * 1000)
-    await step.sleepUntil("wait-for-24-hours", in24Hours)
-    await step.run('send-connection-request-reminder', async () => {
-      const connection = await Connection.findById(connectionId).populate('from-user-id to-user-id')
-      if(connection.status === 'accepted'){
-        return {message : 'Already accepted'}
+    const in24Hours = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await step.sleepUntil("wait-for-24-hours", in24Hours);
+    await step.run("send-connection-request-reminder", async () => {
+      const connection = await Connection.findById(connectionId).populate(
+        "from-user-id to-user-id"
+      );
+      if (connection.status === "accepted") {
+        return { message: "Already accepted" };
       }
 
       const subject = `New connection request`;
@@ -158,31 +161,72 @@ PingUp Team
       `;
 
       await sendEmail({
-        to : connection.to_user_id.email,
+        to: connection.to_user_id.email,
         subject,
-        body
-      })
+        body,
+      });
 
-      return {message : 'Remainder sent'}
-    })
+      return { message: "Remainder sent" };
+    });
   }
 );
 
 // inngest function to delelte story after 24 hours of creation
 
 const deleteStory = inngest.createFunction(
-   {id : 'story-delete'},
-    {event : 'app/story.delete'},
-    async ({event, step}) => {
-      const {storyId} = event.data;
-      const in24Hours = new Date(Date.now() + 24 * 60 * 60 * 1000)
-      await step.sleepUntil("wait-for-24-hours", in24Hours)
-      await step.run('delete-story', async () => {
-        await Story.findByIdAndDelete(storyId);
-        return {message : 'Story deleted successfully'}
+  { id: "story-delete" },
+  { event: "app/story.delete" },
+  async ({ event, step }) => {
+    const { storyId } = event.data;
+    const in24Hours = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await step.sleepUntil("wait-for-24-hours", in24Hours);
+    await step.run("delete-story", async () => {
+      await Story.findByIdAndDelete(storyId);
+      return { message: "Story deleted successfully" };
+    });
+  }
+);
+
+const sendNotificationOfUnseenMessages = inngest.createFunction(
+  { id: "send-unseen-messages-notification" },
+  { cron: "TZ=America/New_York 0 9 * * *" }, // Every day at 9 AM EST
+  async ({ step }) => {
+    const messages = await Message.find({ seen: false }).populate(
+      "to_user_id from_user_id"
+    );
+    const unseenCount = {};
+    messages.map((message) => {
+      unseenCount[message.to_user_id._id] =
+        (unseenCount[message.to_user_id._id] || 0) + 1;
+    });
+
+    for (const userId in unseenCount) {
+      const user = await User.findById(userId);
+      const subject = `You have ${unseenCount[userId]} unseen messages`;
+      const body = `<div>
+  <p>Hi ${user.full_name || user.username},</p>
+  <p>You have <strong>${
+    unseenCount[userId]
+  }</strong> unseen messages on PingUp. Please check your inbox to stay updated.</p>
+  <p>Thanks,<br/>PingUp Team</p>
+</div>`;
+
+      await sendEmail({
+        to: user.email,
+        subject,
+        body,
       })
     }
-)
 
+    return { message: "Notifications sent" };
+  }
+);
 // Create an empty array where we'll export future Inngest functions
-export const functions = [syncUserCreation, syncUserUpdation, syncUserDeletion, sendNewConnectionRequestReminder, deleteStory];
+export const functions = [
+  syncUserCreation,
+  syncUserUpdation,
+  syncUserDeletion,
+  sendNewConnectionRequestReminder,
+  deleteStory,
+  sendNotificationOfUnseenMessages
+];

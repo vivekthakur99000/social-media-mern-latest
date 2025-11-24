@@ -3,7 +3,11 @@ import { acceptConnectionRequest, discoverUsers, followUser, getUserConnection, 
 import { protect } from "../middlewares/auth.js";
 import { upload } from "../configs/multer.js";
 import { getUserRecentMessages } from "../controllers/messageController.js";
+
+
 const userRouter = express.Router();
+
+
 
 userRouter.get("/data", protect, getUserData);
 userRouter.post(
