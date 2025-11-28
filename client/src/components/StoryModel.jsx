@@ -1,6 +1,8 @@
 import { ArrowLeft, Sparkle, TextIcon, Upload } from "lucide-react";
 import React, { useState } from "react";
 import toast from "react-hot-toast";
+import { useAuth } from "@clerk/clerk-react";
+import api from "../api/axios";
 
 const StoryModel = ({ setShowModel, fetchStories }) => {
   const bgColors = [
@@ -18,17 +20,85 @@ const StoryModel = ({ setShowModel, fetchStories }) => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [background, setBackground] = useState(bgColors[0]);
 
+  const { getToken } = useAuth();
+
+  const MAX_VIDEO_DURATION = 60; // in seconds
+  const MAX_VIDEO_SIZE_MB = 50 //MB
+
   const handleMediaUpload = (event) => {
     const file = event.target.files?.[0];
 
     if (file) {
-      setMedia(file);
-      setPreviewUrl(URL.createObjectURL(file));
+      if(file.type.startsWith("video")) {
+        if(file.size > MAX_VIDEO_SIZE_MB * 1024 * 1024) {
+          toast.error(`Video size should not exceed ${MAX_VIDEO_SIZE_MB} `);
+          setMedia(null);
+          setPreviewUrl(null);
+          return;
+        }
+
+        const video = document.createElement("video");
+        video.src = URL.createObjectURL(file);
+        video.preload = "metadata";
+        video.onloadedmetadata = () => {
+          window.URL.revokeObjectURL(video.src);
+          if (video.duration > MAX_VIDEO_DURATION) {
+            toast.error(`Video duration should not exceed ${MAX_VIDEO_DURATION} seconds.`);
+            setMedia(null);
+            setPreviewUrl(null);
+          }else{
+            setMedia(file);
+            setPreviewUrl(URL.createObjectURL(file));
+            setText("");
+            setMode("media");
+          }
+      }
+      video.src =URL.createObjectURL(file);
+      }else if(file.type.startsWith("image")){
+        setMedia(file);
+        setPreviewUrl(URL.createObjectURL(file));
+        setText("");
+        setMode("media");
+      }
     }
   };
 
   const handleCreateStrory = async () => {
+    const media_type =
+      mode === "media"
+        ? media?.type.startsWith("image")
+          ? "image"
+          : "video"
+        : "text";
 
+    if (media_type === "text" && !text.trim()) {
+      throw new Error("Text content cannot be empty");
+    }
+    let formData = new FormData();
+    formData.append("media_type", media_type);
+    formData.append("content", text);
+    formData.append("background_color", background);
+    formData.append("media", media);
+
+    const token = await getToken();
+
+    try {
+      const { data } = await api.post("/api/story/create", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (data.success) {
+        setShowModel(false);
+        toast.success(data.message);
+        fetchStories();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   return (
@@ -95,10 +165,7 @@ const StoryModel = ({ setShowModel, fetchStories }) => {
             }`}
           >
             <input
-              onChange={(e) => {
-                handleMediaUpload(e);
-                setMode("media");
-              }}
+              onChange={handleMediaUpload}
               type="file"
               accept="image/*, video/*"
               className="hidden"
@@ -106,11 +173,14 @@ const StoryModel = ({ setShowModel, fetchStories }) => {
             <Upload size={18} /> Photo/video
           </label>
         </div>
-        <button onClick={() => toast.promise(handleCreateStrory(), {
-          loading : "Saving...",
-          success : <p>Story Added</p>,
-          error : e => <p>e.message</p>
-        })} className="flex items-center justify-center gap-2 text-white py-3 mt-4 w-full rounded bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:scale-95 transition cursor-pointer">
+        <button
+          onClick={() =>
+            toast.promise(handleCreateStrory(), {
+              loading: "Saving...",
+            })
+          }
+          className="flex items-center justify-center gap-2 text-white py-3 mt-4 w-full rounded bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:scale-95 transition cursor-pointer"
+        >
           <Sparkle size={18} />
           Create story
         </button>
